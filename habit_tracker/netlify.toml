@@ -1,0 +1,4 @@
+[[redirects]]
+  from = "/"
+  to = "/savings-tracker.html"
+  status = 200

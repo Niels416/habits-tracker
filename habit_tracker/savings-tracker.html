@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Vault — Savings Tracker</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#c9a84c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="The Vault" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0e1628; --navy2: #16213e;
+      --gold: #c9a84c; --gold-light: #e8c97a; --gold-dim: #8a6f2f;
+      --text-main: #f5f0e8; --text-muted: #9ba8bf;
+      --green: #4caf7d; --red: #e06060;
+      --card-border: rgba(201,168,76,0.2);
+    }
+    body { background: var(--navy); color: var(--text-main); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+    .screen { display: none; padding: 2.5rem 1.25rem 4rem; }
+    .screen.active { display: block; }
+    .container { max-width: 480px; margin: 0 auto; }
+    .card {
+      background: var(--navy2); border: 1px solid var(--card-border);
+      border-radius: 20px; padding: 1.75rem; margin-bottom: 1.25rem;
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    /* LOGIN */
+    #loginScreen { min-height: 100vh; display: none; align-items: center; justify-content: center; padding: 2rem 1.25rem; }
+    #loginScreen.active { display: flex; }
+    .login-box {
+      background: var(--navy2); border: 1px solid var(--card-border);
+      border-radius: 24px; padding: 2.5rem 2rem; width: 100%; max-width: 380px;
+      position: relative; overflow: hidden;
+    }
+    .login-box::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .login-logo { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; color: var(--gold-light); text-align: center; margin-bottom: 4px; }
+    .login-tagline { text-align: center; font-size: 12px; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2rem; }
+    .field-label { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 7px; display: block; }
+    .field-wrap { margin-bottom: 1rem; }
+    .text-input {
+      width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(201,168,76,0.25);
+      border-radius: 12px; padding: 13px 16px; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; color: var(--text-main); outline: none; transition: border-color 0.2s;
+    }
+    .text-input:focus { border-color: var(--gold); }
+    .text-input::placeholder { color: rgba(245,240,232,0.2); }
+    .login-btn {
+      width: 100%; background: var(--gold); color: var(--navy); border: none;
+      border-radius: 12px; padding: 15px; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 500; cursor: pointer; letter-spacing: 0.04em;
+      transition: all 0.2s; margin-top: 0.5rem;
+    }
+    .login-btn:hover { background: var(--gold-light); transform: translateY(-1px); }
+    .login-btn:active { transform: scale(0.98); }
+    .login-error { color: var(--red); font-size: 13px; text-align: center; margin-top: 0.75rem; min-height: 20px; }
+
+    /* APP */
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem; }
+    .welcome-name { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--gold-light); }
+    .logout-btn {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 7px 14px; font-size: 12px; color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s; letter-spacing: 0.04em;
+    }
+    .logout-btn:hover { border-color: var(--red); color: var(--red); background: rgba(224,96,96,0.08); }
+    .subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 1.5rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .total-label { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    .total-amount { font-family: 'DM Mono', monospace; font-size: 48px; font-weight: 500; color: var(--gold-light); line-height: 1; transition: transform 0.3s, color 0.3s; }
+    .total-amount.pop { transform: scale(1.04); color: #fff; }
+    .streak-row { display: flex; gap: 1rem; margin-top: 1.25rem; }
+    .stat-chip { background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.2); border-radius: 10px; padding: 8px 14px; flex: 1; text-align: center; }
+    .stat-chip .val { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: var(--gold-light); }
+    .stat-chip .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .progress-section { margin-top: 1.25rem; }
+    .progress-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+    .progress-bar-bg { height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold-light)); border-radius: 99px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+    .input-label { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+    .amount-row { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(201,168,76,0.25); border-radius: 12px; padding: 0 14px; margin-bottom: 12px; transition: border-color 0.2s; }
+    .amount-row:focus-within { border-color: var(--gold); }
+    .currency-symbol { font-family: 'DM Mono', monospace; font-size: 20px; color: var(--gold); margin-right: 6px; }
+    .amount-input { background: none; border: none; outline: none; font-family: 'DM Mono', monospace; font-size: 24px; color: var(--text-main); width: 100%; padding: 14px 0; }
+    .amount-input::placeholder { color: rgba(245,240,232,0.2); }
+    .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .tag { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 5px 12px; font-size: 12px; color: var(--text-muted); cursor: pointer; transition: all 0.15s; user-select: none; }
+    .tag:hover { background: rgba(201,168,76,0.1); border-color: var(--gold-dim); color: var(--gold-light); }
+    .tag.selected { background: rgba(201,168,76,0.18); border-color: var(--gold); color: var(--gold-light); }
+    .note-input { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 9px 14px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--text-main); width: 100%; outline: none; margin-bottom: 12px; }
+    .note-input::placeholder { color: rgba(245,240,232,0.2); }
+    .save-btn { width: 100%; background: var(--gold); color: var(--navy); border: none; border-radius: 12px; padding: 15px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; letter-spacing: 0.04em; transition: all 0.2s; }
+    .save-btn:hover { background: var(--gold-light); transform: translateY(-1px); }
+    .save-btn:active { transform: scale(0.98); }
+    .history-card { background: var(--navy2); border: 1px solid var(--card-border); border-radius: 20px; overflow: hidden; }
+    .history-header { padding: 1.25rem 1.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; }
+    .history-title { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .clear-btn { font-size: 11px; color: var(--red); background: none; border: none; cursor: pointer; opacity: 0.6; transition: opacity 0.2s; }
+    .clear-btn:hover { opacity: 1; }
+    .history-list { max-height: 320px; overflow-y: auto; }
+    .history-empty { padding: 2.5rem; text-align: center; color: var(--text-muted); font-size: 13px; }
+    .history-item { display: flex; align-items: center; gap: 12px; padding: 13px 1.75rem; border-bottom: 1px solid rgba(255,255,255,0.04); animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+    .item-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+    .item-info { flex: 1; min-width: 0; }
+    .item-desc { font-size: 13px; color: var(--text-main); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-time { font-size: 11px; color: var(--text-muted); }
+    .item-amount { font-family: 'DM Mono', monospace; font-size: 15px; color: var(--green); font-weight: 500; flex-shrink: 0; }
+    .toast { position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--gold); color: var(--navy); border-radius: 14px; padding: 12px 22px; font-size: 14px; font-weight: 500; z-index: 999; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1); white-space: nowrap; pointer-events: none; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .history-list::-webkit-scrollbar { width: 4px; }
+    .history-list::-webkit-scrollbar-track { background: transparent; }
+    .history-list::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.3); border-radius: 99px; }
+  </style>
+</head>
+<body>
+
+  <div id="loginScreen" class="screen">
+    <div class="login-box">
+      <div class="login-logo">The Vault</div>
+      <div class="login-tagline">Every small choice, compounding</div>
+      <div class="field-wrap">
+        <label class="field-label" for="emailInput">Email</label>
+        <input class="text-input" id="emailInput" type="email" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="field-wrap">
+        <label class="field-label" for="passwordInput">Access code</label>
+        <input class="text-input" id="passwordInput" type="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button class="login-btn" onclick="attemptLogin()">Enter the vault</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+  </div>
+
+  <div id="appScreen" class="screen">
+    <div class="container">
+      <div class="topbar">
+        <div class="welcome-name" id="welcomeName">The Vault</div>
+        <button class="logout-btn" onclick="logout()">Log out</button>
+      </div>
+      <p class="subtitle">Every small choice, compounding</p>
+      <div class="card">
+        <div class="total-label">Total saved</div>
+        <div class="total-amount" id="totalDisplay">$0.00</div>
+        <div class="streak-row">
+          <div class="stat-chip"><div class="val" id="streakVal">0</div><div class="lbl">Day streak</div></div>
+          <div class="stat-chip"><div class="val" id="savingsCount">0</div><div class="lbl">Saves made</div></div>
+          <div class="stat-chip"><div class="val" id="avgVal">$0.00</div><div class="lbl">Avg per save</div></div>
+        </div>
+        <div class="progress-section">
+          <div class="progress-header"><span>Next milestone</span><span id="milestoneLabel">$50</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="input-label">Log a saving</div>
+        <div class="amount-row">
+          <span class="currency-symbol">$</span>
+          <input class="amount-input" id="amountInput" type="number" placeholder="0.00" min="0" step="0.01" />
+        </div>
+        <div class="tag-row" id="tagRow">
+          <div class="tag selected" data-tag="Skipped coffee">Skipped coffee</div>
+          <div class="tag" data-tag="Packed lunch">Packed lunch</div>
+          <div class="tag" data-tag="Skipped takeaway">Skipped takeaway</div>
+          <div class="tag" data-tag="Walked instead">Walked instead</div>
+          <div class="tag" data-tag="Made it at home">Made it at home</div>
+          <div class="tag" data-tag="Other">Other</div>
+        </div>
+        <input class="note-input" id="noteInput" type="text" placeholder="Add a note (optional)..." maxlength="80" />
+        <button class="save-btn" onclick="logSaving()">Add to vault</button>
+      </div>
+      <div class="history-card">
+        <div class="history-header">
+          <span class="history-title">Saving history</span>
+          <button class="clear-btn" onclick="clearAll()">Clear all</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="history-empty">No savings logged yet — make your first one!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // =====================================================================
+    //  HOW TO ADD / CHANGE USERS
+    //
+    //  Each user needs three things:
+    //    e  — their email address (lowercase)
+    //    h  — their access code, encoded in Base64
+    //    n  — their display name shown inside the app
+    //
+    //  To get the Base64 value for a new access code, open your browser
+    //  console (F12) and type:  btoa("yourpassword")
+    //  Copy the result and paste it as the h value below.
+    //
+    //  Current access codes (for your reference — keep this private!):
+    //    you@example.com    → changeme
+    //    friend@example.com → friend123
+    // =====================================================================
+    const U = [
+      { e: "you@example.com",    h: "Y2hhbmdlbWU=",   n: "Your Name" },
+      { e: "friend@example.com", h: "ZnJpZW5kMTIz",   n: "Friend"    },
+      // To add more users, copy the line above and fill in the details.
+      // Use btoa("theirpassword") in the browser console to get the h value.
+    ];
+
+    function check(email, input) {
+      const u = U.find(x => x.e === email);
+      return u && btoa(input) === u.h ? u : null;
+    }
+
+    // =====================================================================
+
+    let currentUser = null;
+
+    function boot() {
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+      const saved = sessionStorage.getItem('vault_user');
+      if (saved) { currentUser = JSON.parse(saved); showApp(); }
+      else showLogin();
+    }
+
+    function showLogin() {
+      document.getElementById('loginScreen').classList.add('active');
+      document.getElementById('appScreen').classList.remove('active');
+      setTimeout(() => document.getElementById('emailInput').focus(), 100);
+    }
+
+    function showApp() {
+      document.getElementById('loginScreen').classList.remove('active');
+      document.getElementById('appScreen').classList.add('active');
+      document.getElementById('welcomeName').textContent = currentUser.name;
+      loadState();
+    }
+
+    function attemptLogin() {
+      const email = document.getElementById('emailInput').value.trim().toLowerCase();
+      const input = document.getElementById('passwordInput').value;
+      const errorEl = document.getElementById('loginError');
+      const match = check(email, input);
+      if (match) {
+        currentUser = { email: match.e, name: match.n };
+        sessionStorage.setItem('vault_user', JSON.stringify(currentUser));
+        errorEl.textContent = '';
+        document.getElementById('passwordInput').value = '';
+        showApp();
+      } else {
+        errorEl.textContent = 'Incorrect email or access code.';
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('passwordInput').focus();
+      }
+    }
+
+    function logout() {
+      sessionStorage.removeItem('vault_user');
+      currentUser = null;
+      document.getElementById('emailInput').value = '';
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('loginError').textContent = '';
+      showLogin();
+    }
+
+    document.getElementById('emailInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('passwordInput').focus(); });
+    document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
+
+    // ── Savings ───────────────────────────────────────────────────
+    const MILESTONES = [10, 25, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+    let state = { total: 0, entries: [], streak: 0, lastSaveDate: null };
+
+    function storageKey() { return 'vault__' + currentUser.email; }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(storageKey());
+        state = raw ? JSON.parse(raw) : { total: 0, entries: [], streak: 0, lastSaveDate: null };
+        recalcStreak();
+      } catch (e) { state = { total: 0, entries: [], streak: 0, lastSaveDate: null }; }
+      render();
+    }
+
+    function saveState() { try { localStorage.setItem(storageKey(), JSON.stringify(state)); } catch (e) {} }
+
+    function recalcStreak() {
+      if (!state.lastSaveDate) { state.streak = 0; return; }
+      if (Math.floor((new Date() - new Date(state.lastSaveDate)) / 86400000) > 1) state.streak = 0;
+    }
+
+    function getPrevMilestone(t) { for (let i = MILESTONES.length-1; i >= 0; i--) if (t >= MILESTONES[i]) return MILESTONES[i]; return 0; }
+    function getNextMilestone(t) { for (let m of MILESTONES) if (t < m) return m; return MILESTONES[MILESTONES.length-1]*2; }
+    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function render() {
+      document.getElementById('totalDisplay').textContent = '$' + state.total.toFixed(2);
+      document.getElementById('streakVal').textContent    = state.streak;
+      document.getElementById('savingsCount').textContent = state.entries.length;
+      document.getElementById('avgVal').textContent = '$' + (state.entries.length > 0 ? (state.total / state.entries.length).toFixed(2) : '0.00');
+      const prevM = getPrevMilestone(state.total), nextM = getNextMilestone(state.total);
+      document.getElementById('progressFill').style.width = Math.min(100, ((state.total - prevM) / (nextM - prevM)) * 100) + '%';
+      document.getElementById('milestoneLabel').textContent = '$' + nextM;
+      const list = document.getElementById('historyList');
+      if (!state.entries.length) { list.innerHTML = '<div class="history-empty">No savings logged yet — make your first one!</div>'; return; }
+      list.innerHTML = [...state.entries].reverse().map(e => `
+        <div class="history-item">
+          <div class="item-dot"></div>
+          <div class="item-info">
+            <div class="item-desc">${escHtml(e.tag)}${e.note ? ' — ' + escHtml(e.note) : ''}</div>
+            <div class="item-time">${escHtml(e.date)}</div>
+          </div>
+          <div class="item-amount">+$${parseFloat(e.amount).toFixed(2)}</div>
+        </div>`).join('');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    function logSaving() {
+      const input = document.getElementById('amountInput');
+      const amount = parseFloat(input.value);
+      if (!amount || amount <= 0) { input.focus(); return; }
+      const tag  = (document.querySelector('.tag.selected') || {}).dataset?.tag || 'Other';
+      const note = document.getElementById('noteInput').value.trim();
+      const now  = new Date();
+      const dateStr = now.toLocaleDateString('en-AU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const today = now.toDateString();
+      const lastDate = state.lastSaveDate ? new Date(state.lastSaveDate).toDateString() : null;
+      if (lastDate !== today) {
+        const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
+        state.streak = lastDate === yesterday.toDateString() ? state.streak + 1 : 1;
+      }
+      state.lastSaveDate = now.toISOString();
+      const oldTotal = state.total;
+      state.total = Math.round((state.total + amount) * 100) / 100;
+      state.entries.push({ amount, tag, note, date: dateStr });
+      for (let m of MILESTONES) { if (oldTotal < m && state.total >= m) { showToast('🎉 Milestone: $' + m + ' saved!'); break; } }
+      const display = document.getElementById('totalDisplay');
+      display.classList.add('pop'); setTimeout(() => display.classList.remove('pop'), 400);
+      input.value = ''; document.getElementById('noteInput').value = '';
+      saveState(); render();
+    }
+
+    document.getElementById('tagRow').addEventListener('click', e => {
+      const tag = e.target.closest('.tag'); if (!tag) return;
+      document.querySelectorAll('.tag').forEach(t => t.classList.remove('selected'));
+      tag.classList.add('selected');
+    });
+
+    document.getElementById('amountInput').addEventListener('keydown', e => { if (e.key === 'Enter') logSaving(); });
+
+    function clearAll() {
+      if (!confirm('Clear all your savings history? This cannot be undone.')) return;
+      state = { total: 0, entries: [], streak: 0, lastSaveDate: null };
+      saveState(); render();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
